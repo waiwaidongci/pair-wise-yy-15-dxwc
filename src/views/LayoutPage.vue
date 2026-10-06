@@ -4,7 +4,7 @@ import { MessagePlugin } from 'tdesign-vue-next'
 import { useLabelStore } from '../stores/labelStore'
 import LabelSheet from '../components/LabelSheet.vue'
 import type { BorderStyle } from '../types/label'
-import { barcodeLabel, labelInnerWidth, labelsPerPage, rowsPerPage } from '../utils/layout'
+import { barcodeLabel, labelInnerWidth, labelsPerPage, layoutFingerprint, rowsPerPage } from '../utils/layout'
 
 const store = useLabelStore()
 const zoom = ref(0.68)
@@ -14,6 +14,8 @@ const previewSpecimens = computed(() =>
     : store.specimens.slice(0, labelsPerPage(store.activeTemplate)),
 )
 const template = computed(() => store.activeTemplate)
+/** 当前改版指纹：纸张/栏数/边距/学名字号变化时，分页与溢出据此失效重算 */
+const revision = computed(() => layoutFingerprint(template.value))
 
 watch(
   () => template.value.id,
@@ -22,6 +24,15 @@ watch(
     if (value >= 0.35 && value <= 1.2) zoom.value = value
   },
   { immediate: true },
+)
+
+watch(
+  () => store.lastConflict,
+  (conflict) => {
+    if (conflict) {
+      MessagePlugin.warning(`与其他标签页保存的版本冲突，已保留为冲突副本：${conflict.name}`)
+    }
+  },
 )
 
 function updateNumber(key: keyof typeof template.value, value: number | string) {
@@ -41,10 +52,31 @@ function setZoom(value: number) {
 <template>
   <div class="page-grid layout-page">
     <section class="control-panel">
+      <t-alert
+        v-if="store.remoteOutdated"
+        class="remote-alert"
+        theme="warning"
+        message="其他标签页已保存该模板的新版本"
+        description="本页工作副本已落后，继续保存将生成冲突副本。可刷新同步后再编辑。"
+      >
+        <template #action>
+          <t-button size="small" variant="outline" @click="store.refreshFromRemote()">刷新同步</t-button>
+        </template>
+      </t-alert>
+      <t-alert
+        v-if="store.lastConflict"
+        class="remote-alert"
+        theme="info"
+        :message="`已保留冲突副本：${store.lastConflict.name}`"
+        description="先保存的版本已生效，本次改动未覆盖原模板。"
+        closable
+        @close="store.lastConflict = null"
+      />
       <div class="panel-heading">
         <div>
           <span>模板参数</span>
           <strong>{{ template.name }}</strong>
+          <t-tag class="version-tag" size="small" theme="primary" variant="light">v{{ template.version }}</t-tag>
         </div>
         <t-button size="small" variant="outline" @click="store.saveAsTemplate(`标签模板 ${store.templates.length + 1}`); MessagePlugin.success('已另存为新模板')">
           另存模板
@@ -217,6 +249,7 @@ function setZoom(value: number) {
         <span>每页行数 <strong>{{ rowsPerPage(template) }}</strong></span>
         <span>每页容量 <strong>{{ labelsPerPage(template) }}</strong></span>
         <span>识别方式 <strong>{{ barcodeLabel(template.barcodeMode) }}</strong></span>
+        <span class="layout-summary__revision">当前改版 <strong>v{{ template.version }}</strong> · 结构指纹 <code>{{ revision }}</code></span>
       </div>
     </section>
 

@@ -1,6 +1,9 @@
 import type { ImportResult, Specimen, ValidationIssue } from '../types/label'
 
-const FIELD_ALIASES: Record<keyof Specimen | 'id', string[]> = {
+/** 可从 CSV 导入的标本字段（labelLock 为界面锁定状态，不在导入范围内） */
+type CsvField = Exclude<keyof Specimen, 'labelLock'>
+
+const FIELD_ALIASES: Record<CsvField, string[]> = {
   id: ['id', '记录id'],
   accessionNo: ['编号', '馆藏号', '标本号', 'accession', 'catalogno', 'catalog_no'],
   taxonName: ['类群', '分类', '中文名', '科名', 'taxon'],
@@ -40,12 +43,12 @@ function normalizeHeader(value: string) {
   return value.trim().toLowerCase().replace(/[\s_-]+/g, '')
 }
 
-function resolveField(header: string): keyof Specimen | null {
+function resolveField(header: string): CsvField | null {
   const normalized = normalizeHeader(header)
   const entry = Object.entries(FIELD_ALIASES).find(([, aliases]) =>
     aliases.some((alias) => normalizeHeader(alias) === normalized),
   )
-  return entry ? (entry[0] as keyof Specimen) : null
+  return entry ? (entry[0] as CsvField) : null
 }
 
 export function validateSpecimens(specimens: Specimen[], existing = false): ValidationIssue[] {

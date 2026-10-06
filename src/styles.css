@@ -114,6 +114,11 @@ button, input, textarea { font: inherit; }
 .layout-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 16px; padding: 12px; border-radius: 8px; background: #f4f7f2; }
 .layout-summary span { color: #77887c; font-size: 10px; }
 .layout-summary strong { display: block; margin-top: 2px; color: #31533b; font-size: 12px; }
+.layout-summary__revision { grid-column: 1 / -1; }
+.layout-summary__revision code { display: block; margin-top: 3px; color: #8a7a4a; font-size: 10px; word-break: break-all; }
+.version-tag { margin-left: 8px; vertical-align: middle; }
+.remote-alert { margin-bottom: 12px; }
+.remote-alert + .panel-heading { margin-top: 4px; }
 
 .preview-panel { display: flex; min-height: calc(100vh - 120px); flex-direction: column; overflow: hidden; }
 .preview-toolbar, .print-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid #e1e8df; }
@@ -146,6 +151,8 @@ button, input, textarea { font: inherit; }
 .print-toolbar strong, .print-toolbar > div > span { display: block; }
 .print-toolbar strong { color: #2c4433; }
 .print-toolbar > div > span { margin-top: 4px; color: #839086; font-size: 11px; }
+.print-toolbar__revision { margin-top: 6px !important; color: #8a7a4a !important; font-size: 10px !important; }
+.print-toolbar__revision code { color: #8a7a4a; }
 .print-stage { min-height: 560px; padding: 28px; border-radius: 10px; background: #dfe5dc; overflow: auto; }
 .print-pages { display: flex; flex-direction: column; align-items: center; gap: 46px; }
 .print-page-wrap { position: relative; width: fit-content; }
@@ -159,6 +166,8 @@ button, input, textarea { font: inherit; }
 .template-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .template-card { overflow: hidden; border: 1px solid #dfe6dc; border-radius: 9px; background: #fff; }
 .template-card--active { border-color: #8db49a; box-shadow: 0 0 0 2px rgba(69, 137, 91, .1); }
+.template-card--conflict { border-color: #d9b38a; background: #fdf8f1; }
+.template-card--conflict .template-card__preview { background: #f3ece0; }
 .template-card__preview { display: grid; height: 150px; place-items: center; background: #edf1ea; }
 .mini-page { display: grid; width: 90px; padding: 5px; border: 1px solid #c8d2c7; background: #fff; grid-template-columns: repeat(4, 1fr); gap: 1px; }
 .mini-page span { border: 1px solid #cbd4ca; }

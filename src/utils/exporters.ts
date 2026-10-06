@@ -2,11 +2,11 @@ import QRCode from 'qrcode'
 import JsBarcode from 'jsbarcode'
 import type { LabelTemplate, Specimen } from '../types/label'
 import {
+  effectiveLabelLayout,
   formatDate,
   labelInnerWidth,
   paginateSpecimens,
   safeFilePart,
-  scientificFontScale,
 } from './layout'
 
 function download(content: BlobPart, filename: string, type: string) {
@@ -80,14 +80,14 @@ export async function exportPrintableHtml(
   const labelWidth = labelInnerWidth(template)
   const rows = Array.from({ length: pages.length }, (_, pageIndex) =>
     pages[pageIndex].map((specimen) => {
-      const scale = scientificFontScale(specimen.scientificName, template)
+      const layout = effectiveLabelLayout(specimen, template)
       const mark = ''
       return {
         pageIndex,
-        html: `<article class="label">
+        html: `<article class="label" style="font-size:${layout.fontSizePt.toFixed(2)}pt;line-height:${layout.lineHeightMm.toFixed(2)}mm">
           <div class="label__main">
             <div class="label__top"><strong>${escapeHtml(specimen.taxonName || '待鉴定类群')}</strong><span>${escapeHtml(specimen.accessionNo)}</span></div>
-            <div class="scientific" style="font-size:${(template.fontSizePt * scale).toFixed(2)}pt;font-style:${template.italicScientific ? 'italic' : 'normal'}">${escapeHtml(specimen.scientificName || '学名待补')}</div>
+            <div class="scientific" style="font-size:${layout.fontSizePt.toFixed(2)}pt;font-style:${template.italicScientific ? 'italic' : 'normal'}">${escapeHtml(specimen.scientificName || '学名待补')}</div>
             ${template.includeCollection ? `<div>${escapeHtml(specimen.locality || '采集地待补')}</div>` : ''}
             ${template.includeCollection ? `<div>${formatDate(specimen.collectedAt)} · ${escapeHtml(specimen.collector || '采集人待补')}${template.includeHabitat && specimen.habitat ? ` · ${escapeHtml(specimen.habitat)}` : ''}</div>` : ''}
             ${template.includeNotes && specimen.notes ? `<div>${escapeHtml(specimen.notes)}</div>` : ''}

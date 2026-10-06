@@ -30,6 +30,7 @@ const COLLECTORS = ['沈砚', '孟川', '赵禾', '郭清', '贺屿', '唐映', 
 export const DEFAULT_TEMPLATE: LabelTemplate = {
   id: 'template-standard-a4',
   name: '馆藏标准标签 · A4 四栏',
+  version: 1,
   paperWidthMm: 210,
   paperHeightMm: 297,
   marginTopMm: 10,

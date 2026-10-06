@@ -5,7 +5,8 @@ import { DownloadIcon, PrintIcon } from 'tdesign-icons-vue-next'
 import { useLabelStore } from '../stores/labelStore'
 import LabelSheet from '../components/LabelSheet.vue'
 import { exportPrintableHtml, exportTemplateConfig } from '../utils/exporters'
-import { labelsPerPage } from '../utils/layout'
+import { effectiveLabelLayout, labelsPerPage, layoutFingerprint } from '../utils/layout'
+import type { Specimen } from '../types/label'
 
 const store = useLabelStore()
 const zoom = ref(0.7)
@@ -13,6 +14,7 @@ const pages = computed(() =>
   Math.max(1, Math.ceil(store.specimens.length / labelsPerPage(store.activeTemplate))),
 )
 const pageIndexes = computed(() => Array.from({ length: pages.value }, (_, index) => index))
+const revision = computed(() => layoutFingerprint(store.activeTemplate))
 let pageStyle: HTMLStyleElement | null = null
 
 watchEffect(() => {
@@ -37,6 +39,21 @@ async function exportHtml() {
   await exportPrintableHtml(store.specimens, store.activeTemplate)
   MessagePlugin.success('可打印 HTML 已生成')
 }
+
+/** 点击标签上的锁：未锁定则按当前字号/行高锁定，已锁定则解除 */
+function toggleLock(specimen: Specimen) {
+  if (specimen.labelLock) {
+    store.clearLabelLock(specimen.id)
+    MessagePlugin.success(`已解除「${specimen.accessionNo}」的字号与换行锁定`)
+  } else {
+    const layout = effectiveLabelLayout(specimen, store.activeTemplate)
+    store.setLabelLock(specimen.id, {
+      fontSizePt: layout.fontSizePt,
+      lineHeightMm: layout.lineHeightMm,
+    })
+    MessagePlugin.success(`已锁定「${specimen.accessionNo}」的字号与换行`)
+  }
+}
 </script>
 
 <template>
@@ -53,10 +70,23 @@ async function exportHtml() {
       </t-space>
     </section>
 
+    <t-alert
+      v-if="store.remoteOutdated"
+      class="remote-alert"
+      theme="warning"
+      message="其他标签页已保存该模板的新版本"
+      description="本页工作副本已落后，继续保存将生成冲突副本。可刷新同步后再编辑。"
+    >
+      <template #action>
+        <t-button size="small" variant="outline" @click="store.refreshFromRemote()">刷新同步</t-button>
+      </template>
+    </t-alert>
+
     <section class="print-toolbar">
       <div>
-        <strong>{{ store.activeTemplate.name }}</strong>
+        <strong>{{ store.activeTemplate.name }} <t-tag size="small" theme="primary" variant="light">v{{ store.activeTemplate.version }}</t-tag></strong>
         <span>{{ store.activeTemplate.paperWidthMm }} × {{ store.activeTemplate.paperHeightMm }} mm · {{ store.activeTemplate.columns }} 栏 · 共 {{ store.specimens.length }} 张</span>
+        <span class="print-toolbar__revision">改版指纹 <code>{{ revision }}</code></span>
       </div>
       <div class="zoom-tools">
         <t-button size="small" variant="outline" @click="zoom = Math.max(.3, zoom - .07)">−</t-button>
@@ -79,6 +109,8 @@ async function exportHtml() {
               :specimens="store.specimens"
               :template="store.activeTemplate"
               :page-index="pageIndex"
+              lockable
+              @toggle-lock="toggleLock"
             />
           </div>
         </div>
@@ -91,8 +123,8 @@ async function exportHtml() {
         <span>每页 {{ labelsPerPage(store.activeTemplate) }} 张，页间硬分页，不使用浏览器自动折行。</span>
       </article>
       <article>
-        <strong>打印设置</strong>
-        <span>打印对话框中选择“实际大小 / 100%”，关闭“适合页面”缩放。</span>
+        <strong>改版联动</strong>
+        <span>纸张、栏数、边距或学名字号一变，分页与溢出提醒即按改版指纹失效重算；锁定字号/换行的标签沿用原结果。</span>
       </article>
       <article>
         <strong>成品文件</strong>

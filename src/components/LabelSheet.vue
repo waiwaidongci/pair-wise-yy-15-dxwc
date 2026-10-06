@@ -8,6 +8,12 @@ const props = defineProps<{
   specimens: Specimen[]
   template: LabelTemplate
   pageIndex?: number
+  /** 是否显示单条标签的字号/换行锁定按钮 */
+  lockable?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'toggle-lock', specimen: Specimen): void
 }>()
 
 const pageItems = computed(() => {
@@ -37,6 +43,8 @@ const sheetStyle = computed(() => ({
       :key="specimen.id"
       :specimen="specimen"
       :template="template"
+      :lockable="lockable"
+      @toggle-lock="(item) => emit('toggle-lock', item)"
     />
     <div
       v-for="index in Math.max(0, labelsPerPage(template) - pageItems.length)"
