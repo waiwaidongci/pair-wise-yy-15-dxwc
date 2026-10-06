@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { LabelTemplate, Specimen } from '../types/label'
+import type { LabelMetrics, LabelOverrideMap, LabelTemplate, Specimen } from '../types/label'
 import { labelInnerWidth, labelsPerPage, rowsPerPage } from '../utils/layout'
 import LabelItem from './LabelItem.vue'
 
@@ -8,6 +8,13 @@ const props = defineProps<{
   specimens: Specimen[]
   template: LabelTemplate
   pageIndex?: number
+  overrides?: LabelOverrideMap
+  metrics?: Record<string, LabelMetrics>
+  selectedId?: string
+}>()
+
+const emit = defineEmits<{
+  select: [specimen: Specimen]
 }>()
 
 const pageItems = computed(() => {
@@ -37,6 +44,10 @@ const sheetStyle = computed(() => ({
       :key="specimen.id"
       :specimen="specimen"
       :template="template"
+      :override="overrides?.[specimen.id]"
+      :metrics="metrics?.[specimen.id]"
+      :selected="selectedId === specimen.id"
+      @click="emit('select', specimen)"
     />
     <div
       v-for="index in Math.max(0, labelsPerPage(template) - pageItems.length)"

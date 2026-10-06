@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { MessagePlugin } from 'tdesign-vue-next'
 import {
   AppIcon,
   CollectionIcon,
@@ -8,9 +9,11 @@ import {
   FileExportIcon,
   PrintIcon,
 } from 'tdesign-icons-vue-next'
+import { useLabelStore } from './stores/labelStore'
 
 const route = useRoute()
 const router = useRouter()
+const store = useLabelStore()
 const navItems = [
   { path: '/layout', label: '版面编辑', icon: Edit1Icon },
   { path: '/specimens', label: '清单校验', icon: CollectionIcon },
@@ -18,6 +21,24 @@ const navItems = [
   { path: '/templates', label: '模板库', icon: FileExportIcon },
 ]
 const activePath = computed(() => navItems.find((item) => route.path.startsWith(item.path))?.path ?? '/layout')
+
+watch(
+  () => store.conflictNotice,
+  (notice) => {
+    if (notice) MessagePlugin.warning(notice.text, 6000)
+  },
+)
+watch(
+  () => store.externalSyncNotice,
+  (notice) => {
+    if (notice) MessagePlugin.info(notice.text, 3000)
+  },
+)
+onMounted(() => {
+  if (store.migratedLegacy) {
+    MessagePlugin.info('旧版模板缺少版本号，已迁移为初始版本 v1 并打开', 5000)
+  }
+})
 </script>
 
 <template>

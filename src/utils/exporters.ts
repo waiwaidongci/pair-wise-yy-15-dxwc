@@ -1,13 +1,8 @@
 import QRCode from 'qrcode'
 import JsBarcode from 'jsbarcode'
-import type { LabelTemplate, Specimen } from '../types/label'
-import {
-  formatDate,
-  labelInnerWidth,
-  paginateSpecimens,
-  safeFilePart,
-  scientificFontScale,
-} from './layout'
+import type { LabelOverrideMap, LabelTemplate, Specimen } from '../types/label'
+import { formatDate, labelInnerWidth, safeFilePart } from './layout'
+import { computeSheetLayout } from './layoutEngine'
 
 function download(content: BlobPart, filename: string, type: string) {
   const blob = new Blob([content], { type })
@@ -55,13 +50,14 @@ async function barcodeMarkup(specimen: Specimen, mode: LabelTemplate['barcodeMod
   return ''
 }
 
-export function exportTemplateConfig(template: LabelTemplate) {
+export function exportTemplateConfig(template: LabelTemplate, overrides?: LabelOverrideMap) {
   download(
     JSON.stringify(
       {
-        schema: 'specimen-label-layout/v1',
+        schema: 'specimen-label-layout/v2',
         exportedAt: new Date().toISOString(),
         template,
+        labelOverrides: overrides ?? {},
         physicalUnit: 'mm',
       },
       null,
@@ -75,31 +71,29 @@ export function exportTemplateConfig(template: LabelTemplate) {
 export async function exportPrintableHtml(
   specimens: Specimen[],
   template: LabelTemplate,
+  overrides: LabelOverrideMap = {},
 ) {
-  const pages = paginateSpecimens(specimens, template)
+  // 与屏幕预览共用同一次排版结果：分页、锁定字号与换行完全一致
+  const layout = computeSheetLayout(specimens, template, overrides)
   const labelWidth = labelInnerWidth(template)
-  const rows = Array.from({ length: pages.length }, (_, pageIndex) =>
-    pages[pageIndex].map((specimen) => {
-      const scale = scientificFontScale(specimen.scientificName, template)
-      const mark = ''
-      return {
-        pageIndex,
-        html: `<article class="label">
+  const pageHtml = layout.pages
+    .map(
+      (page) =>
+        `<section class="sheet">${page
+          .map((specimen) => {
+            const metrics = layout.metrics[specimen.id]
+            return `<article class="label">
           <div class="label__main">
             <div class="label__top"><strong>${escapeHtml(specimen.taxonName || '待鉴定类群')}</strong><span>${escapeHtml(specimen.accessionNo)}</span></div>
-            <div class="scientific" style="font-size:${(template.fontSizePt * scale).toFixed(2)}pt;font-style:${template.italicScientific ? 'italic' : 'normal'}">${escapeHtml(specimen.scientificName || '学名待补')}</div>
+            <div class="scientific" style="font-size:${metrics.fontSizePt.toFixed(2)}pt;font-style:${template.italicScientific ? 'italic' : 'normal'};${metrics.wrap ? '' : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'}">${escapeHtml(specimen.scientificName || '学名待补')}</div>
             ${template.includeCollection ? `<div>${escapeHtml(specimen.locality || '采集地待补')}</div>` : ''}
             ${template.includeCollection ? `<div>${formatDate(specimen.collectedAt)} · ${escapeHtml(specimen.collector || '采集人待补')}${template.includeHabitat && specimen.habitat ? ` · ${escapeHtml(specimen.habitat)}` : ''}</div>` : ''}
             ${template.includeNotes && specimen.notes ? `<div>${escapeHtml(specimen.notes)}</div>` : ''}
           </div>
-          <div class="mark-slot" data-code="${escapeHtml(specimen.accessionNo)}">${mark}</div>
-        </article>`,
-      }
-    }),
-  )
-  const pageHtml = pages
-    .map(
-      (_, pageIndex) => `<section class="sheet">${rows[pageIndex].map((item) => item.html).join('')}</section>`,
+          <div class="mark-slot" data-code="${escapeHtml(specimen.accessionNo)}"></div>
+        </article>`
+          })
+          .join('')}</section>`,
     )
     .join('')
   const html = `<!doctype html>

@@ -46,12 +46,17 @@ function saveTemplate() {
         <div class="template-card__body">
           <div class="template-card__title">
             <strong>{{ template.name }}</strong>
-            <t-tag v-if="template.id === store.activeTemplateId" theme="success" variant="light">使用中</t-tag>
+            <t-space size="4">
+              <t-tag variant="outline">v{{ template.version }}</t-tag>
+              <t-tag v-if="template.conflictOf" theme="warning" variant="light">冲突副本</t-tag>
+              <t-tag v-if="template.id === store.activeTemplateId" theme="success" variant="light">使用中</t-tag>
+            </t-space>
           </div>
           <div class="template-meta">
             <span>{{ template.paperWidthMm }} × {{ template.paperHeightMm }} mm</span>
             <span>{{ template.columns }} 栏 / {{ labelsPerPage(template) }} 张每页</span>
             <span>{{ template.fontSizePt }}pt / {{ barcodeLabel(template.barcodeMode) }}</span>
+            <span v-if="template.conflictOf">与其他窗口的保存冲突，原模板版本未受影响</span>
           </div>
           <div class="template-actions">
             <t-button
@@ -91,6 +96,7 @@ function saveTemplate() {
           <LabelSheet
             :specimens="store.specimens.slice(0, labelsPerPage(previewTemplate()))"
             :template="previewTemplate()"
+            :overrides="store.labelOverrides"
           />
         </div>
       </div>

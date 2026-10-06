@@ -49,6 +49,7 @@ export const DEFAULT_TEMPLATE: LabelTemplate = {
   includeCollection: true,
   includeHabitat: false,
   includeNotes: false,
+  version: 1,
   updatedAt: new Date().toISOString(),
 }
 

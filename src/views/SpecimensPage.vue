@@ -99,7 +99,7 @@ function saveEdit() {
         <span>必须修正</span><strong>{{ store.errorCount }}</strong><small>缺少字段或编号重复</small>
       </article>
       <article class="metric-card metric-card--amber">
-        <span>排版提醒</span><strong>{{ store.warningCount }}</strong><small>超长内容将自动缩小</small>
+        <span>排版提醒</span><strong>{{ store.warningCount + store.sheetLayout.issues.length }}</strong><small>含版面溢出/截断 {{ store.sheetLayout.issues.length }} 条</small>
       </article>
       <article class="metric-card">
         <span>最近导入</span><strong>{{ lastImport.total }}</strong><small>{{ lastImport.ignored }} 行空记录已忽略</small>
